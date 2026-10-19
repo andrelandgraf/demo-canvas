@@ -29,7 +29,6 @@ function placeCanvas(ratio: string, size: string | undefined, displayIndex: stri
   return { display, canvas: centerIn(area, width, height), mainHeight: displays[0].frame.height };
 }
 
-/** Keeps the frame up until Ctrl-C, SIGTERM or `canvas off`. */
 function holdFrame(canvas: Rect) {
   console.log("Frame is up. Record the area inside it. Stop with Ctrl-C or `canvas off`.");
   const frame = startFrame(canvas);
@@ -81,7 +80,6 @@ function open(argv: string[]) {
   if (!values["no-frame"]) holdFrame(canvas);
 }
 
-/** Draws only the frame, around the canvas `open` places for the same sizing flags. */
 function frame(argv: string[]) {
   const { values } = parseArgs({
     args: argv,
