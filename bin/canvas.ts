@@ -9,7 +9,7 @@ import {
   usableArea,
   type Layout,
 } from "../lib/canvas/layout.ts";
-import { listDisplays, openChromeWindow, startFrame, stopFrame } from "../lib/canvas/macos.ts";
+import { checkUrl, listDisplays, openChromeWindow, startFrame, stopFrame } from "../lib/canvas/macos.ts";
 
 const USAGE = `Usage:
   canvas open [--ratio 16:9] [--size 1920x1080] [--panes 2] [--layout columns|rows]
@@ -38,6 +38,7 @@ function open(argv: string[]) {
   if (values.layout !== undefined && values.layout !== "columns" && values.layout !== "rows") {
     throw new Error("--layout must be columns or rows.");
   }
+  values.url.forEach(checkUrl);
 
   const displays = listDisplays();
   const display = pickDisplay(displays, values.display === undefined ? undefined : Number(values.display));

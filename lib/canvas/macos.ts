@@ -17,13 +17,18 @@ export function listDisplays(): Display[] {
   return JSON.parse(execFileSync("osascript", ["-l", "JavaScript", "-e", source], { encoding: "utf8" }));
 }
 
+/** `osascript` would read a URL starting with "-" as one of its own flags. */
+export function checkUrl(url: string) {
+  if (url.startsWith("-")) throw new Error(`--url can't start with "-": ${url}`);
+}
+
 /**
  * Opens a new Chrome window at `bounds` and fails when Chrome keeps it
  * elsewhere, which happens below Chrome's minimum window size or under a
  * menu bar.
  */
 export function openChromeWindow(bounds: [number, number, number, number], url: string | undefined) {
-  if (url?.startsWith("-")) throw new Error(`--url can't start with "-": ${url}`);
+  if (url) checkUrl(url);
   // The bounds are integers written into the script: osascript reads a
   // negative argument such as -2680 as one of its own flags.
   const script = `on run argv
