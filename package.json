@@ -1,0 +1,17 @@
+{
+  "name": "demo-canvas",
+  "private": true,
+  "type": "module",
+  "description": "Tile Chrome windows into a social-media aspect ratio on a wide screen and frame the area for Screen Studio.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "canvas": "bun bin/canvas.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
+  }
+}
