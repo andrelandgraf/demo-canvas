@@ -46,6 +46,11 @@ describe("canvasSize", () => {
     expect(() => canvasSize("wide", undefined, area)).toThrow("--ratio must look like");
   });
 
+  test("rejects a ratio with a zero or unbounded side", () => {
+    expect(() => canvasSize("16:0", undefined, area)).toThrow("--ratio needs two whole numbers above zero");
+    expect(() => canvasSize(`${"9".repeat(309)}:1`, undefined, area)).toThrow("--ratio needs two whole numbers above zero");
+  });
+
   test("rejects a ratio too extreme to keep a side", () => {
     expect(() => canvasSize("10000:1", undefined, area)).toThrow("doesn't fit this display");
   });

@@ -34,7 +34,9 @@ export function parseSize(value: string, flag: string): [number, number] {
   const match = /^(\d+)[x:](\d+)$/.exec(value);
   if (!match) throw new Error(`${flag} must look like 1920x1080 or 16:9, got "${value}".`);
   const [width, height] = [Number(match[1]), Number(match[2])];
-  if (width === 0 || height === 0) throw new Error(`${flag} can't have a zero side, got "${value}".`);
+  if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width === 0 || height === 0) {
+    throw new Error(`${flag} needs two whole numbers above zero, got "${value}".`);
+  }
   return [width, height];
 }
 
