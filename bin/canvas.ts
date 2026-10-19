@@ -8,6 +8,7 @@ import {
   pickDisplay,
   usableArea,
   type Layout,
+  type Rect,
 } from "../lib/canvas/layout.ts";
 import { checkUrl, listDisplays, openChromeWindow, resolveProfile, startFrame, stopFrame } from "../lib/canvas/macos.ts";
 
@@ -15,8 +16,25 @@ const USAGE = `Usage:
   canvas open [--ratio 16:9] [--size 1920x1080] [--panes 2] [--layout columns|rows]
               [--gap 0] [--url <url>]... [--display <index>] [--profile <email|name>]
               [--browser-ui] [--no-frame]
+  canvas frame [--ratio 16:9] [--size 1920x1080] [--display <index>]
   canvas off
   canvas displays`;
+
+/** Where the canvas goes for these sizing flags: the same spot for `open` and `frame`. */
+function placeCanvas(ratio: string, size: string | undefined, displayIndex: string | undefined) {
+  const displays = listDisplays();
+  const display = pickDisplay(displays, displayIndex === undefined ? undefined : Number(displayIndex));
+  const area = usableArea(display);
+  const [width, height] = canvasSize(ratio, size, area);
+  return { display, canvas: centerIn(area, width, height), mainHeight: displays[0].frame.height };
+}
+
+function holdFrame(canvas: Rect) {
+  console.log("Frame is up. Record the area inside it. Stop with Ctrl-C or `canvas off`.");
+  const frame = startFrame(canvas);
+  for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, () => frame.kill());
+  frame.on("exit", (code) => process.exit(code ?? 0));
+}
 
 function open(argv: string[]) {
   const { values } = parseArgs({
@@ -44,13 +62,9 @@ function open(argv: string[]) {
   values.url.forEach(checkUrl);
   const profileDirectory = values.profile === undefined ? undefined : resolveProfile(values.profile);
 
-  const displays = listDisplays();
-  const display = pickDisplay(displays, values.display === undefined ? undefined : Number(values.display));
-  const area = usableArea(display);
-  const [width, height] = canvasSize(values.ratio, values.size, area);
+  const { display, canvas, mainHeight } = placeCanvas(values.ratio, values.size, values.display);
+  const { width, height } = canvas;
   const layout: Layout = values.layout ?? (width >= height ? "columns" : "rows");
-  const canvas = centerIn(area, width, height);
-  const mainHeight = displays[0].frame.height;
   const windows = panes(canvas, count, layout, gap).map((pane) => appleScriptBounds(pane, mainHeight));
 
   stopFrame();
@@ -63,15 +77,28 @@ function open(argv: string[]) {
     `Canvas ${width}x${height} pt (${width * display.scale}x${height * display.scale} px) on display ` +
       `${display.index}, ${count} ${layout}, top-left at ${left},${top}.`
   );
-  if (values["no-frame"]) return;
-  console.log("Frame is up. Record the area inside it. Stop with Ctrl-C or `canvas off`.");
-  const frame = startFrame(canvas);
-  for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, () => frame.kill());
-  frame.on("exit", (code) => process.exit(code ?? 0));
+  if (!values["no-frame"]) holdFrame(canvas);
+}
+
+function frame(argv: string[]) {
+  const { values } = parseArgs({
+    args: argv,
+    options: {
+      ratio: { type: "string", default: "16:9" },
+      size: { type: "string" },
+      display: { type: "string" },
+    },
+  });
+  const { display, canvas, mainHeight } = placeCanvas(values.ratio, values.size, values.display);
+  stopFrame();
+  const [left, top] = appleScriptBounds(canvas, mainHeight);
+  console.log(`Frame around ${canvas.width}x${canvas.height} pt on display ${display.index}, top-left at ${left},${top}.`);
+  holdFrame(canvas);
 }
 
 const [command, ...rest] = process.argv.slice(2);
 if (command === "open") open(rest);
+else if (command === "frame") frame(rest);
 else if (command === "off") stopFrame();
 else if (command === "displays") {
   for (const d of listDisplays()) {
