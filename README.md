@@ -21,13 +21,14 @@ Canvas 1920x1080 pt (1920x1080 px) on display 2, 2 columns, top-left at -2680,-4
 Frame is up. Record the area inside it. Stop with Ctrl-C or `canvas off`.
 ```
 
-`open` keeps running while the frame is up. Ctrl-C or `bun run canvas off` removes the frame; the Chrome windows stay. Running `open` again replaces the frame.
+`open` keeps running while the frame is up. Ctrl-C or `bun run canvas off` removes the frame; the Chrome windows stay. `bun run canvas frame` draws it again around the same canvas without opening windows; pass it the same `--ratio`, `--size` and `--display` as `open`. Running `open` or `frame` again replaces the frame.
 
 ```bash
 bun run canvas open --ratio 9:16 --url https://neon.com --url https://console.neon.tech
 bun run canvas open --profile me@example.com --browser-ui
 bun run canvas open --ratio 1:1 --panes 1
 bun run canvas open --size 1600x900 --gap 8
+bun run canvas frame --ratio 9:16
 bun run canvas displays
 bun run canvas off
 ```
