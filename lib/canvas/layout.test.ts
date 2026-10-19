@@ -45,6 +45,10 @@ describe("canvasSize", () => {
   test("rejects a malformed ratio", () => {
     expect(() => canvasSize("wide", undefined, area)).toThrow("--ratio must look like");
   });
+
+  test("rejects a ratio too extreme to keep a side", () => {
+    expect(() => canvasSize("10000:1", undefined, area)).toThrow("doesn't fit this display");
+  });
 });
 
 describe("panes and bounds", () => {
@@ -54,6 +58,10 @@ describe("panes and bounds", () => {
     const [left, right] = panes(canvas, 2, "columns", 0).map((pane) => appleScriptBounds(pane, MAIN_HEIGHT));
     expect(left).toEqual([-2680, -454, -1720, 626]);
     expect(right).toEqual([-1720, -454, -760, 626]);
+  });
+
+  test("rejects a gap that leaves no room for the panes", () => {
+    expect(() => panes(canvas, 2, "columns", 2000)).toThrow("2 panes with a 2000 pt gap don't fit a 1920 pt canvas.");
   });
 
   test("rows start at the top and leave the gap between them", () => {

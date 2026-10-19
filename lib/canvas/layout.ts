@@ -63,8 +63,11 @@ export function canvasSize(ratio: string, size: string | undefined, area: Rect):
     : (PRESETS[ratio] ?? (rw >= rh ? [1920, Math.round((1920 * rh) / rw)] : [Math.round((1920 * rw) / rh), 1920]));
   const room = MARGIN + FRAME_THICKNESS;
   const scale = Math.min(1, (area.width - 2 * room) / width, (area.height - 2 * room) / height);
-  if (scale <= 0) throw new Error("The display is too small for a canvas.");
-  return [Math.floor(width * scale), Math.floor(height * scale)];
+  const fitted: [number, number] = [Math.floor(width * scale), Math.floor(height * scale)];
+  if (fitted[0] < 1 || fitted[1] < 1) {
+    throw new Error(`A ${width}x${height} canvas doesn't fit this display: pick a less extreme --ratio or --size.`);
+  }
+  return fitted;
 }
 
 /** A canvas of `width` by `height`, centered in `area`. */
@@ -81,6 +84,7 @@ export function centerIn(area: Rect, width: number, height: number): Rect {
 export function panes(canvas: Rect, count: number, layout: Layout, gap: number): Rect[] {
   const along = layout === "columns" ? canvas.width : canvas.height;
   const each = (along - gap * (count - 1)) / count;
+  if (each < 1) throw new Error(`${count} panes with a ${gap} pt gap don't fit a ${along} pt canvas.`);
   return Array.from({ length: count }, (_, i) => {
     const start = Math.round(i * (each + gap));
     const end = Math.round(i * (each + gap) + each);

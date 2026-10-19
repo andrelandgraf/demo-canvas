@@ -46,11 +46,10 @@ function open(argv: string[]) {
   const layout: Layout = values.layout ?? (width >= height ? "columns" : "rows");
   const canvas = centerIn(area, width, height);
   const mainHeight = displays[0].frame.height;
+  const windows = panes(canvas, count, layout, gap).map((pane) => appleScriptBounds(pane, mainHeight));
 
   stopFrame();
-  for (const [i, pane] of panes(canvas, count, layout, gap).entries()) {
-    openChromeWindow(appleScriptBounds(pane, mainHeight), values.url[i]);
-  }
+  for (const [i, bounds] of windows.entries()) openChromeWindow(bounds, values.url[i]);
 
   const [left, top] = appleScriptBounds(canvas, mainHeight);
   console.log(
