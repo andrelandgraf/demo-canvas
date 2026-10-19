@@ -41,23 +41,39 @@ export interface WindowOptions {
   app: boolean;
 }
 
-function windowIds(): string[] {
-  const out = execFileSync("osascript", ["-e", 'tell application "Google Chrome" to get id of every window'], {
-    encoding: "utf8",
-  }).trim();
-  return out === "" ? [] : out.split(", ");
+/** Chrome's window ids, or null while Chrome is starting and AppleScript can't reach it yet (error -609). */
+function windowIds(): string[] | null {
+  try {
+    const out = execFileSync("osascript", ["-e", 'tell application "Google Chrome" to get id of every window'], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
+    return out === "" ? [] : out.split(", ");
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("(-609)")) return null;
+    throw error;
+  }
+}
+
+function waitFor<T>(what: string, read: () => T | null): T {
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    const value = read();
+    if (value !== null) return value;
+    execFileSync("sleep", ["0.2"]);
+  }
+  throw new Error(`Timed out after 15 seconds waiting for ${what}.`);
 }
 
 /** Waits for the window Chrome opens after `open`, the one id that wasn't there before. */
 function newWindowId(before: string[]): string {
-  const deadline = Date.now() + 10_000;
-  while (Date.now() < deadline) {
-    const added = windowIds().filter((id) => !before.includes(id));
-    if (added.length === 1) return added[0];
+  return waitFor("Chrome to open a window", () => {
+    const ids = windowIds();
+    if (ids === null) return null;
+    const added = ids.filter((id) => !before.includes(id));
     if (added.length > 1) throw new Error("Chrome opened more than one window at once; close the extra one and retry.");
-    execFileSync("sleep", ["0.2"]);
-  }
-  throw new Error("Chrome didn't open a window within 10 seconds.");
+    return added[0] ?? null;
+  });
 }
 
 /**
@@ -72,7 +88,7 @@ export function openChromeWindow(bounds: [number, number, number, number], optio
     ...(options.profileDirectory ? [`--profile-directory=${options.profileDirectory}`] : []),
     ...(options.app ? [`--app=${url}`] : ["--new-window", url]),
   ];
-  const before = windowIds();
+  const before = waitFor("Chrome to answer AppleScript", windowIds);
   // -n hands the arguments to the running Chrome, which opens the window and
   // lets the new process exit.
   execFileSync("open", ["-na", "Google Chrome", "--args", ...args]);
