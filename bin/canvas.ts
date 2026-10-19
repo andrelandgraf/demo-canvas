@@ -9,11 +9,12 @@ import {
   usableArea,
   type Layout,
 } from "../lib/canvas/layout.ts";
-import { checkUrl, listDisplays, openChromeWindow, startFrame, stopFrame } from "../lib/canvas/macos.ts";
+import { checkUrl, listDisplays, openChromeWindow, resolveProfile, startFrame, stopFrame } from "../lib/canvas/macos.ts";
 
 const USAGE = `Usage:
   canvas open [--ratio 16:9] [--size 1920x1080] [--panes 2] [--layout columns|rows]
-              [--gap 0] [--url <url>]... [--display <index>] [--no-frame]
+              [--gap 0] [--url <url>]... [--display <index>] [--profile <email|name>]
+              [--browser-ui] [--no-frame]
   canvas off
   canvas displays`;
 
@@ -28,6 +29,8 @@ function open(argv: string[]) {
       gap: { type: "string", default: "0" },
       url: { type: "string", multiple: true, default: [] },
       display: { type: "string" },
+      profile: { type: "string" },
+      "browser-ui": { type: "boolean", default: false },
       "no-frame": { type: "boolean", default: false },
     },
   });
@@ -39,6 +42,7 @@ function open(argv: string[]) {
     throw new Error("--layout must be columns or rows.");
   }
   values.url.forEach(checkUrl);
+  const profileDirectory = values.profile === undefined ? undefined : resolveProfile(values.profile);
 
   const displays = listDisplays();
   const display = pickDisplay(displays, values.display === undefined ? undefined : Number(values.display));
@@ -50,7 +54,9 @@ function open(argv: string[]) {
   const windows = panes(canvas, count, layout, gap).map((pane) => appleScriptBounds(pane, mainHeight));
 
   stopFrame();
-  for (const [i, bounds] of windows.entries()) openChromeWindow(bounds, values.url[i]);
+  for (const [i, bounds] of windows.entries()) {
+    openChromeWindow(bounds, { url: values.url[i], profileDirectory, app: !values["browser-ui"] });
+  }
 
   const [left, top] = appleScriptBounds(canvas, mainHeight);
   console.log(
