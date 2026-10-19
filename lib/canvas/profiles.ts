@@ -18,7 +18,7 @@ function describe(infoCache: Record<string, ChromeProfile>, directories: string[
  * or the one profile whose name or signed-in email matches, ignoring case.
  */
 export function matchProfile(infoCache: Record<string, ChromeProfile>, query: string): string {
-  if (query in infoCache) return query;
+  if (Object.hasOwn(infoCache, query)) return query;
   const wanted = query.toLowerCase();
   const matches = Object.keys(infoCache).filter((directory) => {
     const { name, user_name } = infoCache[directory];
