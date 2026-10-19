@@ -14,6 +14,18 @@ describe("matchProfile", () => {
     expect(matchProfile(infoCache, "Default")).toBe("Default");
   });
 
+  test("prefers the directory over another profile's name", () => {
+    const collision = { Default: { name: "Profile 2" }, "Profile 2": { name: "Andre" } };
+    expect(matchProfile(collision, "Profile 2")).toBe("Profile 2");
+  });
+
+  test("refuses a name that matches more than one profile", () => {
+    const twins = { "Profile 1": { name: "Andre" }, "Profile 2": { name: "andre" } };
+    expect(() => matchProfile(twins, "Andre")).toThrow(
+      '"Andre" matches more than one Chrome profile: Profile 1 (Andre); Profile 2 (andre). Pass the directory.'
+    );
+  });
+
   test("lists the profiles when nothing matches", () => {
     expect(() => matchProfile(infoCache, "nobody")).toThrow(
       'No Chrome profile matches "nobody". Profiles: Default (Your Chrome); Profile 1 (Person 1, work@example.com); Profile 2 (Andre, me@example.com).'

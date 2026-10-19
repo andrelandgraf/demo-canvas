@@ -4,18 +4,29 @@ export interface ChromeProfile {
   user_name?: string;
 }
 
+function describe(infoCache: Record<string, ChromeProfile>, directories: string[]): string {
+  return directories
+    .map((directory) => {
+      const { name, user_name } = infoCache[directory];
+      return `${directory} (${[name, user_name].filter(Boolean).join(", ")})`;
+    })
+    .join("; ");
+}
+
 /**
- * The profile directory (like "Profile 2") for `query`, matched against the
- * directory, the profile's name or its signed-in email, ignoring case.
+ * The profile directory (like "Profile 2") for `query`: the directory itself,
+ * or the one profile whose name or signed-in email matches, ignoring case.
  */
 export function matchProfile(infoCache: Record<string, ChromeProfile>, query: string): string {
+  if (query in infoCache) return query;
   const wanted = query.toLowerCase();
-  const match = Object.entries(infoCache).find(([directory, profile]) =>
-    [directory, profile.name, profile.user_name].some((value) => value?.toLowerCase() === wanted)
-  );
-  if (match) return match[0];
-  const known = Object.entries(infoCache)
-    .map(([directory, profile]) => `${directory} (${[profile.name, profile.user_name].filter(Boolean).join(", ")})`)
-    .join("; ");
-  throw new Error(`No Chrome profile matches "${query}". Profiles: ${known}.`);
+  const matches = Object.keys(infoCache).filter((directory) => {
+    const { name, user_name } = infoCache[directory];
+    return [name, user_name].some((value) => value?.toLowerCase() === wanted);
+  });
+  if (matches.length === 1) return matches[0];
+  if (matches.length > 1) {
+    throw new Error(`"${query}" matches more than one Chrome profile: ${describe(infoCache, matches)}. Pass the directory.`);
+  }
+  throw new Error(`No Chrome profile matches "${query}". Profiles: ${describe(infoCache, Object.keys(infoCache))}.`);
 }
